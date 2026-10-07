@@ -38,12 +38,14 @@ h2 {
 
 .header {
   display: flex;
+  align-items: flex-start;
   gap: 1em;
   margin-top: 1em;
 }
 
 .header img {
-  width: 50%;
+  width: 260px;
+  flex-shrink: 0;
   object-fit: cover;
 }
 

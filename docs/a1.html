@@ -4,15 +4,132 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
 
-    <title>Example Student's HCDE 439 Physical Computing Page!</title>
+    <title>Assignment 1: Blink!</title>
 
     <link href="style.css" rel="stylesheet" type="text/css" />
   </head>
-  <body>
-    <h1>Example Student's Assignment 1!</h1>
-    <div class="header">
-      <img src="red-panda.jpg" />
-      <p>Here is all the documentation for assignment 1!</p>
-    </div>
+  <body class="writeup">
+    <h1>Assignment 1: Blink!</h1>
+
+    <h2>Project Overview</h2>
+    <p>
+      For this assignment, I made a blinking light pattern using three LEDs: red, yellow, and blue. I connected them to different pins on my Arduino so I could control each one separately. I wanted to make a simple chasing-light effect where the lights turn on one after another. Each LED stays on for half a second before switching to the next one.
+    </p>
+
+    <h2>1. Circuit Schematic</h2>
+    <figure>
+      <img class="schematic" src="images/a1-schematic.jpg" alt="Hand-drawn schematic connecting the red, yellow, and blue LEDs to pins 9, 10, and 11 with 220 ohm resistors, plus the resistor calculations" />
+      <figcaption>
+        Figure 1. My circuit schematic showing how I connected the red, yellow, and blue LEDs to pins 9, 10, and 11 on the Arduino. I used a separate 220Ω resistor for each LED, and connected all three negative legs to GND.
+      </figcaption>
+    </figure>
+
+    <h2>2. Physical Circuit</h2>
+    <figure>
+      <img class="circuit-photo" src="images/a1-circuit.jpg" alt="Arduino Uno connected to a breadboard with red, yellow, and blue LEDs, resistors, and jumper wires" />
+      <figcaption>
+        Figure 2. My breadboard setup with three LEDs, three 220Ω resistors, and jumper wires connected to the Arduino Uno. I followed my schematic when building the circuit.
+      </figcaption>
+    </figure>
+
+    <h2>3. Arduino Code</h2>
+    <p>
+      I used <code>digitalWrite()</code> to turn each LED on and off and <code>delay()</code> to control how long each one stays on. I kept the code pretty simple so I could understand what was happening at each step.
+    </p>
+    <pre><code>// Define the pin to connect to the first LED.
+const int led1 = 9;
+
+// Define the pin to connect to the second LED.
+const int led2 = 10;
+
+// Define the pin to connect to the third LED.
+const int led3 = 11;
+
+// Set up the LED pins when the Arduino starts.
+void setup() {
+  // Set the first LED pin as an output.
+  pinMode(led1, OUTPUT);
+
+  // Set the second LED pin as an output.
+  pinMode(led2, OUTPUT);
+
+  // Set the third LED pin as an output.
+  pinMode(led3, OUTPUT);
+}
+
+// Repeat the blinking pattern continuously.
+void loop() {
+  // Turn on LED 1.
+  digitalWrite(led1, HIGH);
+
+  // Keep LED 1 on for 500 milliseconds.
+  delay(500);
+
+  // Turn off LED 1.
+  digitalWrite(led1, LOW);
+
+  // Turn on LED 2.
+  digitalWrite(led2, HIGH);
+
+  // Keep LED 2 on for 500 milliseconds.
+  delay(500);
+
+  // Turn off LED 2.
+  digitalWrite(led2, LOW);
+
+  // Turn on LED 3.
+  digitalWrite(led3, HIGH);
+
+  // Keep LED 3 on for 500 milliseconds.
+  delay(500);
+
+  // Turn off LED 3.
+  digitalWrite(led3, LOW);
+
+  // Keep all LEDs off for 500 milliseconds.
+  delay(500);
+}</code></pre>
+
+    <h2>4. Circuit Operation</h2>
+    <figure>
+      <img class="blink-gif" src="images/a1_blink.gif" alt="The red, yellow, and blue LEDs turning on one at a time" />
+      <figcaption>
+        Figure 3. My finished blinking circuit. The red, yellow, and blue LEDs turn on one at a time.
+      </figcaption>
+    </figure>
+
+    <h2>5. Questions and Reflections</h2>
+
+    <h3>Question 1: Draw a graph where the X axis is time and the Y axis is voltage across the LEDs. Draw a line for each of your 3 LEDs.</h3>
+    <figure>
+      <img class="voltage-graph" src="images/a1-voltage-graph.jpg" alt="Hand-drawn voltage versus time graph for the yellow, red, and blue LEDs" />
+      <figcaption>
+        Figure 4. My voltage-versus-time graph showing the blinking pattern of the three LEDs.
+      </figcaption>
+    </figure>
+    <p>
+      I drew this graph to better understand how the timing in my code relates to when each LED turns on and off. It helped me see the blinking pattern in a different way.
+    </p>
+
+    <h3>Question 2: How many LEDs could you blink independently with your Arduino? How much current would that draw?</h3>
+    <p>
+      My Arduino Uno could theoretically blink up to 20 LEDs independently because it has 14 digital pins and 6 analog pins that can also be used as digital outputs.
+    </p>
+    <p>
+      Using Ohm's Law with my 220Ω resistors, each red or yellow LED draws about (5 − 2) / 220 = 13.6mA, and each blue LED draws about (5 − 3.3) / 220 = 7.7mA.
+    </p>
+    <p>
+      If I had 7 red LEDs on at the same time, they would draw about 7 × 13.6 = 95.2mA. I would use this as a conservative estimate for how many similar LEDs I could power directly, since the Arduino also has total current limits. In my actual blinking pattern, only one LED is on at a time, so the current is much lower.
+    </p>
+
+    <h3>Question 3: How fast do you need to blink your LEDs until you can no longer tell that they are blinking?</h3>
+    <p>
+      I started with a 500ms delay, where I could clearly see each LED blinking one after another. Then I gradually shortened the delay to make the lights blink faster. At 10ms, the LEDs were flickering really quickly, but I could still notice the blinking. When I reduced the delay to 5ms, I could no longer tell that they were blinking, and the three LEDs almost looked like they were on at the same time.
+    </p>
+
+    <h3>Question 4: Did you use AI tools in completing this assignment? If yes, how and when? Briefly reflect on your experience.</h3>
+    <p>
+      Yes, I used ChatGPT to help me debug my Arduino code and revise the comments to make them clearer and easier to understand. I also used ChatGPT to review the written parts of my assignment, mainly to improve the wording and logical flow of my explanations. Additionally, I used ChatGPT to help format and organize the layout of my portfolio website.
+    </p>
   </body>
 </html>

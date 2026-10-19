@@ -4,15 +4,221 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
 
-    <title>Stella Huang's HCDE 439 Physical Computing Page!</title>
+    <title>Assignment 2: Fade!</title>
 
     <link href="style.css" rel="stylesheet" type="text/css" />
   </head>
-  <body>
-    <h1>Stella Huang's Assignment 2!</h1>
-    <div class="header">
-      <img src="red-panda.jpg" />
-      <p>Here is all the documentation for assignment 2!</p>
-    </div>
+  <body class="writeup">
+    <h1>Assignment 2: Fade!</h1>
+
+    <h2>Project Overview</h2>
+    <p>
+      For this assignment, I built a light-up toy with an Arduino Uno, a button and three LEDs: red, yellow, and blue. While I hold the button, the red LED fades on and then fades off. After that, the yellow LED flashes once, and then the blue LED flashes once. If I let go of the button, the pattern stops and the lights turn off.
+    </p>
+
+    <h2>1. Circuit and Schematic</h2>
+    <figure>
+      <img class="schematic" src="images/a2_schematic.jpg" alt="Hand-drawn schematic with a button on pin 2 and red, yellow, and blue LEDs on pins 9, 10, and 11" />
+      <figcaption>
+        Figure 1. My schematic. The button sits between 5V and pin 2, with a 10kΩ pull-down to GND. Each LED has its own 220Ω resistor.
+      </figcaption>
+    </figure>
+    <figure>
+      <img class="circuit-photo" src="images/a2_circuit.jpg" alt="Arduino Uno wired to a breadboard with a push button and red, yellow, and blue LEDs" />
+      <figcaption>
+        Figure 2. My breadboard with the Arduino Uno, push button, three LEDs, and resistors.
+      </figcaption>
+    </figure>
+    <p>I wired it to match the schematic and the pin numbers in my code:</p>
+    <ul>
+      <li>Red LED: pin 9, with a 220Ω resistor</li>
+      <li>Yellow LED: pin 10, with a 220Ω resistor</li>
+      <li>Blue LED: pin 11, with a 220Ω resistor</li>
+      <li>LED cathodes: tied together and connected to GND</li>
+      <li>Button: between 5V and pin 2</li>
+      <li>10kΩ pull-down resistor: between pin 2 and GND</li>
+    </ul>
+
+    <h2>2. Resistor Calculations</h2>
+    <p>
+      I used 5V from the Arduino and a target LED current of 20mA (0.02A).
+    </p>
+    <p>R = (Vsupply − Vforward) / I</p>
+    <p>Red LED: R = (5V − 2.0V) / 0.02A = 150Ω</p>
+    <p>Yellow LED: R = (5V − 2.0V) / 0.02A = 150Ω</p>
+    <p>Blue LED: R = (5V − 3.3V) / 0.02A = 85Ω</p>
+    <p>
+      I chose 220Ω resistors for all three LEDs because they keep the current below my 20mA target. With those resistors, the estimated current is:
+    </p>
+    <ul>
+      <li>Red: (5 − 2.0) / 220 ≈ 13.6mA</li>
+      <li>Yellow: (5 − 2.0) / 220 ≈ 13.6mA</li>
+      <li>Blue: (5 − 3.3) / 220 ≈ 7.7mA</li>
+    </ul>
+    <p>
+      For the button, I used a 10kΩ pull-down resistor.
+    </p>
+    <p>I = 5V / 10,000Ω = 0.5mA</p>
+    <p>
+      The pull-down keeps pin 2 at LOW when the button is not pressed. When I press the button, pin 2 reads HIGH. The 10kΩ resistor also keeps the current through that path low.
+    </p>
+
+    <h2>3. Arduino Code</h2>
+    <p>
+      I used <code>digitalRead()</code> to check the button, <code>analogWrite()</code> and <code>for</code> loops to fade the red LED, and <code>digitalWrite()</code> to turn the yellow and blue LEDs on and off.
+    </p>
+    <pre><code>// Define the button input pin.
+const int buttonPin = 2;
+
+// Define the red LED pin.
+const int redPin = 9;
+
+// Define the yellow LED pin.
+const int yellowPin = 10;
+
+// Define the blue LED pin.
+const int bluePin = 11;
+
+// Run setup once when the Arduino starts.
+void setup() {
+  // Set the button pin as an input.
+  pinMode(buttonPin, INPUT);
+
+  // Set the red LED pin as an output.
+  pinMode(redPin, OUTPUT);
+
+  // Set the yellow LED pin as an output.
+  pinMode(yellowPin, OUTPUT);
+
+  // Set the blue LED pin as an output.
+  pinMode(bluePin, OUTPUT);
+}
+
+// Repeat the toy's light pattern.
+void loop() {
+  // Check whether the button is pressed.
+  if (digitalRead(buttonPin) == HIGH) {
+
+    // Fade the red LED from off to full brightness.
+    for (int brightness = 0; brightness &lt;= 255; brightness += 5) {
+      // Stop the fade if the button is released.
+      if (digitalRead(buttonPin) == LOW) {
+        // Exit the fade-in loop.
+        break;
+      }
+
+      // Set the red LED brightness using PWM.
+      analogWrite(redPin, brightness);
+
+      // Wait briefly to make the fade visible.
+      delay(15);
+    }
+
+    // Fade the red LED from bright to off.
+    for (int brightness = 255; brightness &gt;= 0; brightness -= 5) {
+      // Stop the fade if the button is released.
+      if (digitalRead(buttonPin) == LOW) {
+        // Exit the fade-out loop.
+        break;
+      }
+
+      // Set the red LED brightness using PWM.
+      analogWrite(redPin, brightness);
+
+      // Wait briefly to make the fade visible.
+      delay(15);
+    }
+
+    // Turn off the red LED before the next step.
+    digitalWrite(redPin, LOW);
+
+    // Check the button again before lighting yellow.
+    if (digitalRead(buttonPin) == HIGH) {
+      // Turn on the yellow LED.
+      digitalWrite(yellowPin, HIGH);
+
+      // Keep yellow on briefly.
+      delay(250);
+
+      // Turn off the yellow LED.
+      digitalWrite(yellowPin, LOW);
+    }
+
+    // Check the button again before lighting blue.
+    if (digitalRead(buttonPin) == HIGH) {
+      // Turn on the blue LED.
+      digitalWrite(bluePin, HIGH);
+
+      // Keep blue on briefly.
+      delay(250);
+
+      // Turn off the blue LED.
+      digitalWrite(bluePin, LOW);
+    }
+  }
+
+  // Turn off the red LED when the sequence ends.
+  digitalWrite(redPin, LOW);
+
+  // Turn off the yellow LED when the sequence ends.
+  digitalWrite(yellowPin, LOW);
+
+  // Turn off the blue LED when the sequence ends.
+  digitalWrite(bluePin, LOW);
+}</code></pre>
+
+    <h2>4. Circuit in Action</h2>
+    <figure>
+      <img class="blink-gif" src="images/a2_fade_demo.gif" alt="Finger pressing the button while the LEDs fade and flash on the breadboard" />
+      <figcaption>
+        Figure 3. Holding the button fades the red LED on and off, then flashes yellow, then flashes blue.
+      </figcaption>
+    </figure>
+
+    <h2>5. Additional Questions</h2>
+
+    <h3>Question 1: Voltage vs. Time</h3>
+    <figure>
+      <img src="images/a2_voltage_graph.jpg" alt="Hand-drawn voltage versus time graph for analogWrite values 64, 128, and 255" />
+      <figcaption>
+        Figure 4. My voltage-versus-time graph for different PWM values, using the red LED's estimated 2.0V forward voltage.
+      </figcaption>
+    </figure>
+    <p>
+      I used the red LED as the example, with an estimated forward voltage of 2.0V. <code>analogWrite(led, 64)</code> is about a 25% duty cycle, <code>analogWrite(led, 128)</code> is about 50%, and <code>analogWrite(led, 255)</code> is 100%. The PWM value changes how long the LED stays on during each cycle, which changes how bright it looks. The graph is idealized, and the actual voltage across the LED can vary.
+    </p>
+
+    <h3>Question 2: Total Current and Battery Life</h3>
+    <p>If all three LEDs were on at the same time, their estimated total current would be:</p>
+    <ul>
+      <li>Red: 13.6mA</li>
+      <li>Yellow: 13.6mA</li>
+      <li>Blue: 7.7mA</li>
+    </ul>
+    <p>Total = 13.6 + 13.6 + 7.7 = 34.9mA</p>
+    <p>
+      This is below the ATmega328P's 200mA absolute maximum supply-current rating, although that is not a recommended operating target. The Arduino board itself also uses current.
+    </p>
+    <p>For a 1200mAh battery:</p>
+    <p>Battery life = 1200mAh / 34.9mA ≈ 34.4 hours</p>
+    <p>
+      This is only an ideal estimate based on the LEDs. The actual runtime would be shorter because the Arduino and other parts of the circuit also consume power.
+    </p>
+
+    <h3>Question 3: Actual LED Voltage</h3>
+    <p>
+      I measured the voltage across my red LED with a multimeter while it was fully on.
+    </p>
+    <p>The measured voltage was 1.82V, compared to the estimated forward voltage of 2.0V.</p>
+    <p>Difference: 2.0V − 1.82V = 0.18V</p>
+    <p>Percentage difference: (0.18 / 2.0) × 100% = 9%</p>
+    <p>
+      The measured voltage was about 9% lower than the theoretical estimate. This makes sense because the forward voltage can vary depending on the LED, current and temperature.
+    </p>
+
+    <h3>Question 4: AI Tools</h3>
+    <p>
+      Yes, I used ChatGPT to help me understand check my resistor calculations, and troubleshoot my circuit and code. I also used it to help organize my written answers. I used Cursor to help build my portfolio webpage and keep the layout consistent with A1.
+    </p>
   </body>
 </html>

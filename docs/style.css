@@ -87,9 +87,18 @@ h2 {
 }
 
 .writeup p,
-.writeup figcaption {
+.writeup figcaption,
+.writeup ul {
   margin-top: 0.75em;
   max-width: 68ch;
+}
+
+.writeup ul {
+  padding-left: 1.25em;
+}
+
+.writeup li + li {
+  margin-top: 0.25em;
 }
 
 .writeup figure {

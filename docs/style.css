@@ -138,6 +138,29 @@ h2 {
   font-size: 0.95rem;
 }
 
+.writeup video {
+  width: 100%;
+  max-width: min(100%, 440px);
+  height: auto;
+}
+
+.writeup table {
+  margin-top: 0.75em;
+  border-collapse: collapse;
+}
+
+.writeup th,
+.writeup td {
+  text-align: left;
+  padding: 0.35em 1em 0.35em 0;
+  border-bottom: 1px solid #ddd;
+  font-weight: 400;
+}
+
+.writeup th {
+  font-weight: 700;
+}
+
 .writeup pre {
   margin-top: 1em;
   max-width: 100%;

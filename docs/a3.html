@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
+
+    <title>Assignment 3: Input Output!</title>
+
+    <link href="style.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body class="writeup">
+    <h1>Assignment 3: Input Output!</h1>
+
+    <h2>Project Overview</h2>
+    <p>
+      For this assignment, I built an automatic blinds system using an Arduino Uno, a photoresistor, a servo motor, and a red LED. The photoresistor detects changes in light. When the room is bright, the servo rotates to 90 degrees to open the blinds. When the room is dark, it rotates to 0 degrees to close the blinds. The red LED also changes brightness based on the light level.
+    </p>
+
+    <h2>1. Circuit and Schematic</h2>
+    <figure>
+      <img class="schematic" src="images/a3_schematic.jpg" alt="Hand-drawn schematic of a photoresistor voltage divider, red LED, and servo, with the resistor calculations" />
+      <figcaption>
+        Figure 1. My schematic, including the voltage divider math and the LED resistor calculation.
+      </figcaption>
+    </figure>
+    <figure>
+      <img class="circuit-photo" src="images/a3_circuit.jpg" alt="Arduino Uno on a breadboard with a photoresistor, servo motor, and red LED" />
+      <figcaption>
+        Figure 2. My physical circuit with the Arduino Uno, photoresistor, servo, and red LED.
+      </figcaption>
+    </figure>
+    <p>Components:</p>
+    <ul>
+      <li>Arduino Uno</li>
+      <li>Breadboard</li>
+      <li>Photoresistor</li>
+      <li>10 kΩ resistor</li>
+      <li>220 Ω resistor</li>
+      <li>SG90 servo motor</li>
+      <li>Red LED</li>
+      <li>Jumper wires</li>
+    </ul>
+    <p>Connections:</p>
+    <ul>
+      <li>Photoresistor: 5V to voltage divider midpoint</li>
+      <li>10 kΩ resistor: midpoint to GND</li>
+      <li>Midpoint: A0</li>
+      <li>Servo signal: D6</li>
+      <li>Servo power: 5V</li>
+      <li>Servo ground: GND</li>
+      <li>LED: D5 → 220 Ω resistor → red LED → GND</li>
+    </ul>
+    <p>
+      I used a 10 kΩ resistor with the photoresistor to create a voltage divider. The voltage at A0 changes depending on how much light reaches the photoresistor.
+    </p>
+
+    <h2>2. Voltage Divider Calculations</h2>
+    <p>Assumed photoresistor range: 1 kΩ to 100 kΩ.</p>
+    <p>Rfixed = √(1,000 × 100,000) = 10 kΩ</p>
+    <p>Vmeasure = 5 × R2 / (R1 + R2)</p>
+    <p>Expected bright voltage:</p>
+    <p>5 × 10,000 / (1,000 + 10,000) ≈ 4.55 V</p>
+    <p>Expected dark voltage:</p>
+    <p>5 × 10,000 / (100,000 + 10,000) ≈ 0.45 V</p>
+    <p>Actual measurements:</p>
+    <ul>
+      <li>Bright: ADC 820 ≈ 4.01 V</li>
+      <li>Dark: ADC 320 ≈ 1.56 V</li>
+    </ul>
+    <p>I used a threshold of 570 to switch between day and night mode.</p>
+    <p>For the LED, I used a 220 Ω current-limiting resistor.</p>
+    <p>Assuming the LED forward voltage is approximately 2V:</p>
+    <p>I = (5 − 2) / 220 ≈ 13.6 mA</p>
+
+    <h2>3. Arduino Code</h2>
+    <p>
+      The program reads the photoresistor with <code>analogRead()</code>, maps that reading to LED brightness, and uses the servo to open or close the blinds.
+    </p>
+    <pre><code> // Include the library for controlling the servo.
+#include &lt;Servo.h&gt;
+
+// Create a servo object for the blinds.
+Servo blinds;
+
+// Set the photoresistor input pin.
+const int sensorPin = A0;
+
+// Set the LED PWM output pin.
+const int ledPin = 5;
+
+// Set the servo signal pin.
+const int servoPin = 6;
+
+// Set the light threshold from measured readings.
+const int threshold = 570;
+
+// Run setup once when Arduino starts.
+void setup() {
+  // Start the Serial Monitor.
+  Serial.begin(9600);
+
+  // Set the LED pin as an output.
+  pinMode(ledPin, OUTPUT);
+
+  // Attach the servo to pin 6.
+  blinds.attach(servoPin);
+}
+
+// Repeat the input and output process.
+void loop() {
+  // Read the light sensor from 0 to 1023.
+  int lightValue = analogRead(sensorPin);
+
+  // Map the sensor reading to 0 to 255.
+  int brightness = map(lightValue, 320, 820, 0, 255);
+  brightness = constrain(brightness, 0, 255);
+
+  // Change the LED brightness based on the light level.
+  analogWrite(ledPin, brightness);
+
+  // Check whether the room is bright.
+  if (lightValue &gt; threshold) {
+    // Open the blinds in bright light.
+    blinds.write(90);
+
+    // Print the current blinds status.
+    Serial.println("Day mode: blinds open");
+  } else {
+    // Close the blinds in darkness.
+    blinds.write(0);
+
+    // Print the current blinds status.
+    Serial.println("Night mode: blinds closed");
+  }
+
+  // Print the label for the sensor reading.
+  Serial.print("Light: ");
+
+  // Print the sensor reading.
+  Serial.println(lightValue);
+
+  // Print the label for the LED PWM value.
+  Serial.print("LED PWM: ");
+
+  // Print the LED PWM value.
+  Serial.println(brightness);
+
+  // Wait before the next reading.
+  delay(300);
+}</code></pre>
+
+    <h2>4. Demo Video</h2>
+    <figure>
+      <video controls src="images/a3_demo.mp4">
+        Your browser can't play this video.
+      </video>
+      <figcaption>
+        Figure 3. Covering the photoresistor closes the blinds and dims the LED. Uncovering it opens the blinds and makes the LED brighter.
+      </figcaption>
+    </figure>
+
+    <h2>5. Serial Monitor Output</h2>
+    <figure>
+      <img src="images/a3_serial.png" alt="Arduino Serial Monitor showing day mode, light readings around 829, and LED PWM 255" />
+      <figcaption>
+        Figure 4. Serial Monitor while the photoresistor was uncovered. The light reading stayed around 829, so the blinds stayed open and the LED PWM was 255.
+      </figcaption>
+    </figure>
+    <figure>
+      <img src="images/a3_serial_night.png" alt="Arduino Serial Monitor showing night mode, light readings around 335 to 358, and LED PWM from 7 to 19" />
+      <figcaption>
+        Figure 5. Serial Monitor while the photoresistor was covered. The mode switched to night, the light reading was about 335–358, and the LED PWM dropped to about 7–19.
+      </figcaption>
+    </figure>
+
+    <h2>6. Additional Questions</h2>
+
+    <h3>Question 1: Can the variable resistor be R1 or R2?</h3>
+    <p>
+      Yes. The photoresistor can be either R1 or R2, but its position changes how the measured voltage responds to light.
+    </p>
+    <p>When the photoresistor is R1:</p>
+    <p>Bright: V = 5 × 10 / (1 + 10) = 4.55 V</p>
+    <p>Dark: V = 5 × 10 / (100 + 10) = 0.45 V</p>
+    <p>When the photoresistor is R2:</p>
+    <p>Bright: V = 5 × 1 / (10 + 1) = 0.45 V</p>
+    <p>Dark: V = 5 × 100 / (10 + 100) = 4.55 V</p>
+    <p>Both arrangements work, but the voltage changes in opposite directions.</p>
+
+    <h3>Question 2: Voltage vs. Time Graph</h3>
+    <figure>
+      <img src="images/a3_voltage_graph.jpg" alt="Hand-drawn voltage versus time graph with ADC readings from 0 to 4 seconds" />
+      <figcaption>
+        Figure 6. My voltage-versus-time graph from covering and uncovering the photoresistor.
+      </figcaption>
+    </figure>
+    <table>
+      <thead>
+        <tr>
+          <th>Time (s)</th>
+          <th>ADC Reading</th>
+          <th>Voltage</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>0</td>
+          <td>820</td>
+          <td>4.01 V</td>
+        </tr>
+        <tr>
+          <td>1</td>
+          <td>318</td>
+          <td>1.55 V</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>817</td>
+          <td>3.99 V</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>320</td>
+          <td>1.56 V</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>818</td>
+          <td>4.00 V</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Voltage = (ADC / 1023) × 5</p>
+    <p>
+      I covered and uncovered the photoresistor about every second. When it was uncovered, the voltage was around 4V. When I covered it, the voltage dropped to around 1.55V. The voltage changed repeatedly as the light level changed.
+    </p>
+
+    <h3>Question 3: 16-bit ADC and 10-bit PWM</h3>
+    <p>
+      A 16-bit ADC has values from 0 to 65,535, and a 10-bit PWM output has values from 0 to 1,023.
+    </p>
+    <p>The new mapping expression is:</p>
+    <p><code>map(reading, 0, 65535, 0, 1023)</code></p>
+  </body>
+</html>

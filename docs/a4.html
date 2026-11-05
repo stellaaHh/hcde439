@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
+
+    <title>Assignment 4: Libraries!</title>
+
+    <link href="style.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body class="writeup">
+    <h1>Assignment 4: Libraries!</h1>
+
+    <h2>Project Overview</h2>
+    <p>
+      I made a touch-controlled servo using aluminum foil as the input. When I touch the foil, the servo moves to 150°. When I lift my finger, it returns to 0°. I used the CapacitiveSensor library to read the touch pad and the Servo library to control the motor.
+    </p>
+
+    <h2>1. Schematic</h2>
+    <figure>
+      <img class="schematic" src="images/a4_schematic.jpg" alt="Hand-drawn schematic with a 1 megaohm resistor between pin 2 and pin 4, foil on the pin 4 node, and a servo on pin 9, 5V, and GND" />
+      <figcaption>
+        Figure 1. The Arduino receives power from my computer through USB. Its 5V and GND pins power the servo, and D9 sends the control signal. A 1 MΩ resistor connects D2 to D4. The foil connects to the D4 side through a jumper wire and an alligator clip lead.
+      </figcaption>
+    </figure>
+    <p>
+      The resistor slows charging so a change in capacitance produces a larger timing difference. I used 1 MΩ, which gave me clearly different readings when the foil was touched and untouched.
+    </p>
+
+    <h2>2. Circuit</h2>
+    <figure>
+      <img class="circuit-photo" src="images/a4_circuit.jpg" alt="Arduino Uno, breadboard, aluminum foil touch pad, and servo motor connected with jumper wires" />
+      <figcaption>
+        Figure 2. The alligator clip connects the foil to the jumper at the D4 node. The servo’s power, ground, and signal wires connect to Arduino 5V, GND, and D9.
+      </figcaption>
+    </figure>
+
+    <h2>3. Firmware</h2>
+    <p>
+      The program uses two libraries: <code>CapacitiveSensor</code> to time the foil pad, and <code>Servo</code> to move the motor. It does not use <code>analogRead()</code>, so the assignment’s analog-input calibration step does not apply here. The readings are timing counts from the library, not volts or a 0–1023 ADC range.
+    </p>
+    <p>
+      You can also download the same commented file: <a href="HCDE439_A4.ino">HCDE439_A4.ino</a>
+    </p>
+    <pre><code>// Load the library that reads the capacitive touch pad.
+#include &lt;CapacitiveSensor.h&gt;
+
+// Load the library that controls the servo.
+#include &lt;Servo.h&gt;
+
+// Use D2 as the send pin and D4 as the receive pin.
+CapacitiveSensor touchPad(2, 4);
+
+// Create an object to control the servo arm.
+Servo arm;
+
+// Use 30 samples per reading, following the class demo.
+const int sampleCount = 30;
+
+// Separate untouched readings around 100 from touched readings around 5500.
+const long touchThreshold = 1000;
+
+// Use 0 degrees for the startup and released positions.
+const int releasedAngle = 0;
+
+// Move to 150 degrees when the foil is touched.
+const int touchedAngle = 150;
+
+// Set up the sensor and return the servo to its starting position.
+void setup() {
+  // Disable periodic baseline recalibration during the demo.
+  touchPad.set_CS_AutocaL_Millis(0xFFFFFFFF);
+
+  // Send the servo control signal on D9.
+  arm.attach(9);
+
+  // Command the servo to move to its starting position.
+  arm.write(releasedAngle);
+
+  // Give the servo one second to move before reading the sensor.
+  delay(1000);
+
+  // Start Serial Monitor output at 9600 baud.
+  Serial.begin(9600);
+}
+
+// Read the touch pad and update the servo position repeatedly.
+void loop() {
+  // Measure the touch pad using the selected sample count.
+  long reading = touchPad.capacitiveSensor(sampleCount);
+
+  // Print the reading so I can check the threshold.
+  Serial.println(reading);
+
+  // Leave the servo in place if the library reports a negative error value.
+  if (reading &gt;= 0) {
+    // Check whether the reading is high enough to count as a touch.
+    if (reading &gt;= touchThreshold) {
+      // Move the servo to the touched position.
+      arm.write(touchedAngle);
+    }
+    // Use the released position when the reading is below the threshold.
+    else {
+      // Return the servo to its starting position.
+      arm.write(releasedAngle);
+    }
+  }
+
+  // Pause briefly before starting the next measurement.
+  delay(20);
+}</code></pre>
+    <p>
+      My readings were around 100 without touch and around 5500 when I held my finger on the foil. I chose 1000 as the threshold because it was well above the untouched reading and below the touched reading.
+    </p>
+    <p>
+      I kept the class example’s 30 samples per reading. I used 0° as the resting position and 150° as the touched position so the movement would be easy to see. The one-second startup pause gives the servo time to reach its starting position before touch detection begins.
+    </p>
+    <p>
+      The 20 ms delay adds a short pause between measurements. Serial output uses 9600 baud, matching the Serial Monitor. I disabled periodic automatic baseline recalibration following the class example.
+    </p>
+    <p>
+      If <code>capacitiveSensor()</code> returns a negative error value, the code skips <code>arm.write()</code> and keeps the previous servo position.
+    </p>
+
+    <h2>4. Operation</h2>
+    <figure>
+      <img class="blink-gif" src="images/a4_demo.gif" alt="Touching aluminum foil moves the servo arm; releasing it sends the arm back" />
+      <figcaption>
+        Figure 3. When I touch the foil, the reading rises above 1000 and the servo moves to 150°. When I release it, the reading drops below the threshold and the servo returns to 0°.
+      </figcaption>
+    </figure>
+    <figure>
+      <video controls src="images/a4_demo.mp4">
+        Your browser can't play this video.
+      </video>
+      <figcaption>
+        Figure 4. The original demonstration video of the same touch-and-release cycle.
+      </figcaption>
+    </figure>
+
+    <h2>5. Additional Questions</h2>
+
+    <h3>Question 1: Voltage at pin 9 over time</h3>
+    <p>
+      This question is about the assignment’s sweep sketch with <code>delay(100)</code>, not my touch-controlled firmware.
+    </p>
+    <figure>
+      <img class="schematic" src="images/a4_q1_graph.jpg" alt="Hand-drawn voltage versus time graphs of servo pulses at 0 degrees, 90 degrees, and 180 degrees" />
+      <figcaption>
+        Figure 5. Three time windows from the sweep: 0°, 90°, and 180°. The HIGH pulse gets longer as the commanded angle increases.
+      </figcaption>
+    </figure>
+    <p>
+      The Servo library keeps sending pulses during delay(100). The pulses repeat about every 20 ms, so there are about five pulses before the program increases the angle by 1°. The voltage switches between approximately 0 V and 5 V, and the HIGH part gets longer as the commanded angle increases.
+    </p>
+    <p>
+      My graph shows three time windows from the sweep. With the library’s default settings, the pulse width is about 0.54 ms at 0°, 1.47 ms at 90°, and 2.40 ms at 180°. After the 180° step, the next loop starts at 0° again. Pulse widths are drawn approximately to show the difference.
+    </p>
+    <p>
+      These values come from the default Arduino Servo library timing, not from an oscilloscope measurement.
+      <a href="https://github.com/arduino-libraries/Servo/blob/master/src/Servo.h">Servo.h source</a>
+    </p>
+
+    <h3>Question 2: An input gives an erroneous reading 1% of the time. How can we address this?</h3>
+    <p>
+      I would take three readings and use the middle value after sorting them. For example, if the readings are 100, 980, and 102, the result is 102. This helps remove an occasional outlier when the actual input changes little during those readings. Two incorrect readings in the same group could still affect the result.
+    </p>
+    <pre><code>function setup():
+    initializeSensor()
+
+function readReliableValue():
+    readings = [readSensor(), readSensor(), readSensor()]
+    sort readings from smallest to largest
+    return readings[1]  // Middle value using zero-based indexing
+
+function loop():
+    value = readReliableValue()
+    useReading(value)</code></pre>
+
+    <h3>Question 3: Measurements randomly deviate up or down by 10%. How can we address this?</h3>
+    <p>
+      I would take ten readings and average them. If the noise is equally likely to be above or below the true value and varies independently between readings, the differences partly cancel out. This makes the result less jumpy, although it also makes the response to changes slower.
+    </p>
+    <pre><code>function setup():
+    initializeSensor()
+
+function readSmoothedValue():
+    total = 0
+    repeat 10 times:
+        total = total + readSensor()
+    return total / 10.0
+
+function loop():
+    value = readSmoothedValue()
+    useReading(value)</code></pre>
+
+    <h3>Question 4: AI use</h3>
+    <p>
+      I used ChatGPT to help revise and debug the Arduino code. It also helped me understand the servo waveform and the approaches to the sensor questions. I used Cursor to help me revise the code for the portfolio page.
+    </p>
+  </body>
+</html>

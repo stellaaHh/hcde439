@@ -177,3 +177,11 @@ h2 {
   font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
   font-size: 0.95em;
 }
+
+.writeup a {
+  color: #000;
+}
+
+.writeup a:hover {
+  color: #f06;
+}

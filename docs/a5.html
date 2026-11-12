@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
+
+    <title>A5: High(er) Voltage and Transistors!</title>
+
+    <link href="style.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body class="writeup">
+    <h1>A5: High(er) Voltage and Transistors!</h1>
+
+    <h2>Project Overview</h2>
+    <p>
+      I used an aluminum-foil touch pad to dim and brighten a 12 V LED strip through an IRLZ44N MOSFET. The Arduino reads touches with the CapacitiveSensor library and controls the strip with PWM on D5.
+    </p>
+
+    <h2>1. Schematic</h2>
+    <figure>
+      <img class="schematic" src="images/a5_main.jpg" alt="Hand-drawn schematic showing a 1 megohm resistor between Arduino D2 and the D4 foil node, and an IRLZ44N switching a 12 V LED strip" />
+      <figcaption>
+        Figure 1. My schematic for the foil touch input and low-side MOSFET switch. There is no external 10 kΩ gate pull-down.
+      </figcaption>
+    </figure>
+    <p>
+      Arduino D2 connects through a 1 MΩ resistor to the D4 node, and the foil clips to that same node. The resistor makes the charge time long enough for the Arduino to detect a change when I touch the foil.
+    </p>
+    <p>
+      Arduino D5 connects to the IRLZ44N gate. The LED strip negative connects to the drain, and the source connects to common ground. The strip positive connects to the external 12 V supply. Arduino GND and supply negative are connected, and the Arduino itself is powered over USB.
+    </p>
+    <p>
+      D5 switches between about 0 V and 5 V relative to the source. When the MOSFET is on during a PWM pulse, the strip has approximately 12 V across it. Load current flows from the external supply, through the strip and MOSFET, and back to supply ground.
+    </p>
+
+    <h2>2. Circuit</h2>
+    <figure>
+      <img class="circuit-photo" src="images/a5_circuit.jpg" alt="Built circuit with an Arduino Uno, breadboard, IRLZ44N, foil touch pad, and 12 V LED strip" />
+      <figcaption>
+        Figure 2. My breadboard build. The foil is the touch pad, and the LED strip uses its own 12 V supply with ground shared with the Arduino.
+      </figcaption>
+    </figure>
+    <p>
+      The strip label identifies it as a Lepro PR4100057-DW-US, 5 m, rated 12 V DC and 1.5 A. This is the manufacturer's full-strip rating, not a measurement of my actual load current; I did not measure the current.
+    </p>
+    <p>
+      The LED strip is rated for 12 V and 1.5 A, so I used 1.5 A for my estimate. When D5 is HIGH, the MOSFET gate is about 5 V above its source. Using 0.025 Ω for the estimate, the voltage drop across the MOSFET is 1.5 A × 0.025 Ω ≈ 0.038 V. That leaves about 12 V across the strip while the MOSFET is on. I used the rating on the strip label for this calculation.
+    </p>
+
+    <h2>3. Firmware</h2>
+    <p>
+      The sketch reads the foil with <code>CapacitiveSensor</code> and changes the LED strip brightness using <code>analogWrite()</code> on D5. I kept the uploaded sketch's pins, values, and behavior.
+    </p>
+    <p>
+      <a href="HCDE439_A5.ino">Download the full sketch, HCDE439_A5.ino</a>
+    </p>
+    <pre><code>// Load the library for the foil sensor.
+#include &lt;CapacitiveSensor.h&gt;
+
+// Send on D2 and read the foil on D4.
+CapacitiveSensor touchPad(2, 4);
+
+// Use D5 to drive the MOSFET gate.
+const int stripPin = 5;
+
+// Use 1000 as the cutoff for a touch.
+const long touchThreshold = 1000;
+
+// Set the PWM value for the dim setting.
+const int dimLevel = 40;
+
+// Set the PWM value for the bright setting.
+const int brightLevel = 200;
+
+// Set up the output and Serial Monitor.
+void setup() {
+  // Set the output latch LOW before enabling the output.
+  digitalWrite(stripPin, LOW);
+
+  // Make D5 an output so it drives the gate LOW.
+  pinMode(stripPin, OUTPUT);
+
+  // Send readings to the Serial Monitor at 9600 baud.
+  Serial.begin(9600);
+}
+
+// Read the foil and update the strip.
+void loop() {
+  // Take 30 samples for one reading.
+  long reading = touchPad.capacitiveSensor(30);
+
+  // Print the reading to check the threshold.
+  Serial.println(reading);
+
+  // Check for a sensor error.
+  if (reading &lt; 0) {
+    // Turn off the strip.
+    analogWrite(stripPin, 0);
+  }
+  // Check whether the reading reaches the touch threshold.
+  else if (reading &gt;= touchThreshold) {
+    // Use the bright setting.
+    analogWrite(stripPin, brightLevel);
+  }
+  // Handle valid readings below the threshold.
+  else {
+    // Use the dim setting.
+    analogWrite(stripPin, dimLevel);
+  }
+
+  // Wait 20 ms before reading again.
+  delay(20);
+}</code></pre>
+    <p>
+      My untouched readings were about 18–28, and touched readings were about 2302–4394. The threshold of 1000 falls between those readings. The sketch takes 30 samples per sensor reading and prints each reading at 9600 baud.
+    </p>
+    <p>
+      I used a PWM value of 40 (about 16% duty cycle) to keep the strip dim when the foil is untouched, and 200 (about 78%) to make it brighter when I touch it. In <code>setup()</code>, D5 starts as an input. I set it up so that when <code>pinMode()</code> switches D5 to an output, it starts driving LOW and turns the MOSFET off.
+    </p>
+
+    <h2>4. Operation</h2>
+    <figure>
+      <img class="blink-gif" src="images/a5_demo.gif" alt="The LED strip brightens when a finger touches the foil and dims after the finger is released" />
+      <figcaption>
+        Figure 3. The strip brightens when I touch the foil and dims again when I release it.
+      </figcaption>
+    </figure>
+    <h2>5. Additional Questions</h2>
+
+    <h3>Question 1: IRLZ44N pins and current rating</h3>
+    <p>
+      For the TO-220 package, pin 2 is the drain and pin 3 is the source. The datasheet lists a continuous drain-current absolute maximum of 47 A at <code>TC = 25 °C</code> and <code>VGS = 10 V</code>. This is a maximum under the datasheet's stated case-temperature and gate-voltage conditions, not a general operating-current target.
+    </p>
+
+    <h3>Question 2: Proposed DC motor circuit</h3>
+    <figure>
+      <img class="schematic" src="images/a5_q2.jpg" alt="Hand-drawn proposed circuit with a 6 V motor, IRLZ44N low-side switch, flyback diode, and two capacitors across the supply rails" />
+      <figcaption>
+        Figure 4. Proposed circuit: the 100 µF electrolytic capacitor has its positive lead on +6 V and negative lead on common ground; the 100 nF ceramic capacitor is also across +6 V and ground. The diode cathode connects toward +6 V.
+      </figcaption>
+    </figure>
+    <p>
+      In this proposed circuit, the motor is between +6 V and the MOSFET drain, with the source at common ground. The flyback diode is across the motor, with its cathode toward +6 V. The 100 µF electrolytic and 100 nF ceramic capacitors are both across +6 V and common ground.
+    </p>
+    <h3>Question 3: Two-motor L293D control</h3>
+    <figure>
+      <img class="schematic" src="images/a5_q3.jpg" alt="Hand-drawn L293D schematic connecting Arduino pins D4 through D7 to the two motor input pairs, with shared grounds and separate logic and motor supplies" />
+      <figcaption>
+        Figure 5. D4, D5, D6, and D7 connect to L293D pins 2, 7, 10, and 15. Motor A is across pins 3 and 6; Motor B is across pins 11 and 14.
+      </figcaption>
+    </figure>
+    <p>
+      Pins 1 and 9 (enables) and pin 16 (VCC1) connect to Arduino 5 V. Pin 8 (VCC2) connects to the external motor-supply positive. Pins 4, 5, 12, and 13 share ground with Arduino GND and the motor-supply negative. I define forward as HIGH/LOW on a motor's input pair and backward as LOW/HIGH.
+    </p>
+    <pre><code>function bothForward():
+    MotorA: D4 = HIGH; D5 = LOW
+    MotorB: D6 = HIGH; D7 = LOW
+
+function bothBackward():
+    MotorA: D4 = LOW; D5 = HIGH
+    MotorB: D6 = LOW; D7 = HIGH
+
+function motorAForward_motorBBackward():
+    MotorA: D4 = HIGH; D5 = LOW
+    MotorB: D6 = LOW; D7 = HIGH
+
+function motorABackward_motorBForward():
+    MotorA: D4 = LOW; D5 = HIGH
+    MotorB: D6 = HIGH; D7 = LOW</code></pre>
+    <h3>Question 4: AI use</h3>
+    <p>
+      I used ChatGPT to check my schematics and help me work through Q2 and Q3. For Q2, it helped me check which way the flyback diode should face and where to connect the capacitors. For Q3, it helped me check the L293D pin connections and match the HIGH and LOW inputs in my pseudocode to each motor’s direction. I also used ChatGPT to make my explanations clearer and Codex to revise the code for my portfolio page. ChatGPT was most helpful when I was trying to connect the diagrams to what the components actually do. In Q2, I learned that the flyback diode gives the motor current a path when the MOSFET switches off. In Q3, tracing the inputs and outputs on my schematic helped me see why swapping HIGH and LOW reverses the motor.
+    </p>
+</html>

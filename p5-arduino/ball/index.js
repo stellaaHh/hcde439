@@ -1,15 +1,18 @@
-const BAUD_RATE = 9600; // This should match the baud rate in your Arduino sketch
+const BAUD_RATE = 9600;
 const MIN_DIAMETER = 10;
 const MAX_DIAMETER = 40;
 
-let port, connectBtn; // Declare global variables
+let port, connectBtn;
+let x, y;
+let diameter = 30;
 
 function setup() {
-  setupSerial(); // Run our serial setup function (below)
-
-  // Create a canvas that is the size of our browser window.
-  // windowWidth and windowHeight are p5 variables
   createCanvas(windowWidth, windowHeight);
+
+  x = width / 2;
+  y = height / 2;
+
+  setupSerial();
 }
 
 function draw() {
@@ -25,7 +28,7 @@ function draw() {
   let x = map(Number(arr[0]), 512, 1023, 0, windowWidth);
   let y = map(Number(arr[1]), 512, 1023, 0, windowHeight);
   let diameter = map(Number(arr[2]), 512, 1023, MIN_DIAMETER, MAX_DIAMETER);
-
+  background("gray");
   // Draw a circle using our readings
   circle(x, y, diameter);
 }
